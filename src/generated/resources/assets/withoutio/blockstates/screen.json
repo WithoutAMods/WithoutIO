@@ -1,0 +1,195 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "facing": "north"
+      },
+      "apply": {
+        "model": "withoutio:block/screen_main"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "frame_down": "true"
+      },
+      "apply": {
+        "model": "withoutio:block/screen_frame_bottom"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "frame_up": "true"
+      },
+      "apply": {
+        "model": "withoutio:block/screen_frame_top"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "frame_left": "true"
+      },
+      "apply": {
+        "model": "withoutio:block/screen_frame_right"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "frame_right": "true"
+      },
+      "apply": {
+        "model": "withoutio:block/screen_frame_left"
+      }
+    },
+    {
+      "when": {
+        "facing": "south"
+      },
+      "apply": {
+        "model": "withoutio:block/screen_main",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "frame_down": "true"
+      },
+      "apply": {
+        "model": "withoutio:block/screen_frame_bottom",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "frame_up": "true"
+      },
+      "apply": {
+        "model": "withoutio:block/screen_frame_top",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "frame_left": "true"
+      },
+      "apply": {
+        "model": "withoutio:block/screen_frame_right",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "frame_right": "true"
+      },
+      "apply": {
+        "model": "withoutio:block/screen_frame_left",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west"
+      },
+      "apply": {
+        "model": "withoutio:block/screen_main",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "frame_down": "true"
+      },
+      "apply": {
+        "model": "withoutio:block/screen_frame_bottom",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "frame_up": "true"
+      },
+      "apply": {
+        "model": "withoutio:block/screen_frame_top",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "frame_left": "true"
+      },
+      "apply": {
+        "model": "withoutio:block/screen_frame_right",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "frame_right": "true"
+      },
+      "apply": {
+        "model": "withoutio:block/screen_frame_left",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "east"
+      },
+      "apply": {
+        "model": "withoutio:block/screen_main",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "frame_down": "true"
+      },
+      "apply": {
+        "model": "withoutio:block/screen_frame_bottom",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "frame_up": "true"
+      },
+      "apply": {
+        "model": "withoutio:block/screen_frame_top",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "frame_left": "true"
+      },
+      "apply": {
+        "model": "withoutio:block/screen_frame_right",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "frame_right": "true"
+      },
+      "apply": {
+        "model": "withoutio:block/screen_frame_left",
+        "y": 90
+      }
+    }
+  ]
+}
