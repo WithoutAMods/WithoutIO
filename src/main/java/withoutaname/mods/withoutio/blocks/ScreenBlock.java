@@ -3,7 +3,7 @@ package withoutaname.mods.withoutio.blocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
-import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
@@ -15,7 +15,6 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.material.Material;
-import withoutaname.mods.withoutio.setup.Registration;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -35,33 +34,40 @@ public class ScreenBlock extends BaseEntityBlock {
 	}
 	
 	public BlockState getStateForPlacement(BlockPlaceContext pContext) {
-		final Direction dir = pContext.getHorizontalDirection().getOpposite();
-		final Level level = pContext.getLevel();
-		final BlockPos pos = pContext.getClickedPos();
-		final ScreenBlock block = Registration.SCREEN_BLOCK.get();
-		return this.defaultBlockState()
-				.setValue(FACING, dir)
-				.setValue(FRAME_TOP, !level
-						.getBlockState(pos.above())
-						.is(block))
-				.setValue(FRAME_BOTTOM, !level
-						.getBlockState(pos.below())
-						.is(block))
-				.setValue(FRAME_RIGHT, !level
-						.getBlockState(pos.relative(dir.getCounterClockWise()))
-						.is(block))
-				.setValue(FRAME_LEFT, !level
-						.getBlockState(pos.relative(dir.getClockWise()))
-						.is(block));
+		return updateFrame(pContext.getLevel(),
+				pContext.getClickedPos(),
+				this.defaultBlockState().setValue(FACING,
+						pContext.getHorizontalDirection().getOpposite()));
+	}
+	
+	@SuppressWarnings("deprecation")
+	@Override
+	public BlockState updateShape(BlockState pState, Direction pDirection, BlockState pNeighborState, LevelAccessor pLevel, BlockPos pCurrentPos, BlockPos pNeighborPos) {
+		pState = updateFrame(pLevel, pCurrentPos, pState);
+		return super.updateShape(pState, pDirection, pNeighborState, pLevel, pCurrentPos, pNeighborPos);
+	}
+	
+	private BlockState updateFrame(LevelAccessor level, BlockPos pos, BlockState state) {
+		Direction dir = state.getValue(FACING);
+		return state
+				.setValue(FRAME_TOP, shouldBeFrame(level, pos, dir, Direction.UP))
+				.setValue(FRAME_BOTTOM, shouldBeFrame(level, pos, dir, Direction.DOWN))
+				.setValue(FRAME_RIGHT, shouldBeFrame(level, pos, dir, dir.getCounterClockWise()))
+				.setValue(FRAME_LEFT, shouldBeFrame(level, pos, dir, dir.getClockWise()));
+	}
+	
+	private boolean shouldBeFrame(LevelAccessor level, BlockPos pos, Direction facing, Direction dir) {
+		BlockState state = level.getBlockState(pos.relative(dir));
+		return !(state.is(this) && state.getValue(FACING) == facing);
 	}
 	
 	@Nullable
 	@Override
-	public BlockEntity newBlockEntity(@Nonnull BlockPos pPos, @Nonnull BlockState pState) {
+	public BlockEntity newBlockEntity(BlockPos pPos, BlockState pState) {
 		return new ScreenEntity(pPos, pState);
 	}
 	
-	@Nonnull
+	@SuppressWarnings("deprecation")
 	@Override
 	public RenderShape getRenderShape(@Nonnull BlockState pState) {
 		return RenderShape.MODEL;
