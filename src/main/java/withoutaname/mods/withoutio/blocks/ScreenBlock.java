@@ -2,8 +2,9 @@ package withoutaname.mods.withoutio.blocks;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.context.BlockPlaceContext;
-import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
@@ -14,10 +15,13 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.level.material.Material;
+import withoutaname.mods.withoutio.setup.Registration;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Random;
 
 public class ScreenBlock extends BaseEntityBlock {
 	
@@ -34,31 +38,31 @@ public class ScreenBlock extends BaseEntityBlock {
 	}
 	
 	public BlockState getStateForPlacement(BlockPlaceContext pContext) {
-		return updateFrame(pContext.getLevel(),
-				pContext.getClickedPos(),
-				this.defaultBlockState().setValue(FACING,
-						pContext.getHorizontalDirection().getOpposite()));
+		BlockEntity blockEntity = pContext.getLevel().getBlockEntity(pContext.getClickedPos());
+		return this.defaultBlockState().setValue(FACING,
+						pContext.getHorizontalDirection().getOpposite());
 	}
 	
 	@SuppressWarnings("deprecation")
 	@Override
-	public BlockState updateShape(BlockState pState, Direction pDirection, BlockState pNeighborState, LevelAccessor pLevel, BlockPos pCurrentPos, BlockPos pNeighborPos) {
-		pState = updateFrame(pLevel, pCurrentPos, pState);
-		return super.updateShape(pState, pDirection, pNeighborState, pLevel, pCurrentPos, pNeighborPos);
+	public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean p_60570_) {
+		if (!(oldState.is(Registration.SCREEN_BLOCK.get()) && oldState.getValue(FACING) == state.getValue(FACING))) {
+			BlockEntity entity = level.getBlockEntity(pos);
+			if (entity instanceof ScreenEntity screenEntity) {
+				screenEntity.updateController();
+			} else {
+				throw new IllegalStateException("Couldn't update Controller!");
+			}
+		}
+		super.onPlace(state, level, pos, oldState, p_60570_);
 	}
 	
-	private BlockState updateFrame(LevelAccessor level, BlockPos pos, BlockState state) {
-		Direction dir = state.getValue(FACING);
-		return state
-				.setValue(FRAME_TOP, shouldBeFrame(level, pos, dir, Direction.UP))
-				.setValue(FRAME_BOTTOM, shouldBeFrame(level, pos, dir, Direction.DOWN))
-				.setValue(FRAME_RIGHT, shouldBeFrame(level, pos, dir, dir.getCounterClockWise()))
-				.setValue(FRAME_LEFT, shouldBeFrame(level, pos, dir, dir.getClockWise()));
-	}
-	
-	private boolean shouldBeFrame(LevelAccessor level, BlockPos pos, Direction facing, Direction dir) {
-		BlockState state = level.getBlockState(pos.relative(dir));
-		return !(state.is(this) && state.getValue(FACING) == facing);
+	@Override
+	public void tick(BlockState pState, ServerLevel pLevel, BlockPos pPos, Random pRandom) {
+		super.tick(pState, pLevel, pPos, pRandom);
+		if (pLevel.getBlockEntity(pPos) instanceof ScreenEntity entity) {
+			entity.getController().update();
+		}
 	}
 	
 	@Nullable
@@ -67,7 +71,6 @@ public class ScreenBlock extends BaseEntityBlock {
 		return new ScreenEntity(pPos, pState);
 	}
 	
-	@SuppressWarnings("deprecation")
 	@Override
 	public RenderShape getRenderShape(@Nonnull BlockState pState) {
 		return RenderShape.MODEL;
@@ -76,5 +79,13 @@ public class ScreenBlock extends BaseEntityBlock {
 	@Override
 	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> pBuilder) {
 		pBuilder.add(FACING, FRAME_TOP, FRAME_BOTTOM, FRAME_RIGHT, FRAME_LEFT);
+	}
+	
+	public static Property<Boolean> getFrameProperty(Direction facing, Direction dir) {
+		if (dir == Direction.UP) return FRAME_TOP;
+		else if (dir == Direction.DOWN) return FRAME_BOTTOM;
+		else if (dir == facing.getCounterClockWise()) return FRAME_RIGHT;
+		else if (dir == facing.getClockWise()) return FRAME_LEFT;
+		else throw new IllegalArgumentException("No frame in this direction!");
 	}
 }
