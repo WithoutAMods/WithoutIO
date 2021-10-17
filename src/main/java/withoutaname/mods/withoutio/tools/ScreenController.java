@@ -1,9 +1,12 @@
 package withoutaname.mods.withoutio.tools;
 
+import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.common.util.Constants;
 import withoutaname.mods.withoutio.blocks.ScreenBlock;
 import withoutaname.mods.withoutio.blocks.ScreenEntity;
 import withoutaname.mods.withoutio.setup.Registration;
@@ -14,9 +17,9 @@ import java.util.List;
 
 public class ScreenController {
 	
-	private final Direction facing;
-	private final Direction right;
-	private final Direction left;
+	public final Direction facing;
+	public final Direction right;
+	public final Direction left;
 	@Nullable
 	private Level level;
 	private BlockPos topLeftCorner;
@@ -24,12 +27,50 @@ public class ScreenController {
 	private int height = 1;
 	private boolean removed = false;
 	private boolean shouldUpdate = false;
+	private boolean hasChanged = true;
+	
+	private List<Byte> data = new ArrayList<>();
+	private final List<Byte> lastChanged = new ArrayList<>();
 	
 	public ScreenController(Direction facing, BlockPos pos) {
 		this.facing = facing;
 		right = facing.getCounterClockWise();
 		left = facing.getClockWise();
 		this.topLeftCorner = pos;
+		for (int i = 0; i < 10000; i++) {
+			byte b = (byte) (Math.random() * 128);
+			if (b == 17) continue;
+			addByte(b);
+		}
+	}
+	
+	public void addByte(byte b) {
+		if (b == 8 || b == 127) {
+			if (data.size() > 0) {
+				data.remove(data.size() - 1);
+			}
+		} else if (b == 17) {
+			data.clear();
+		} else if (b >= 9 && b <= 12 || b >= 32) {
+			data.add(b);
+		}
+		if (level != null && !level.isClientSide) {
+			level.getChunkAt(topLeftCorner).markUnsaved();
+			BlockState blockState = level.getBlockState(topLeftCorner);
+			level.sendBlockUpdated(topLeftCorner, blockState, blockState, Constants.BlockFlags.BLOCK_UPDATE);
+		}
+	}
+	
+	public List<Byte> getData() {
+		return data;
+	}
+	
+	public int getHeight() {
+		return height;
+	}
+	
+	public int getWidth() {
+		return width;
 	}
 	
 	public void tryExpand(Direction dir) {
@@ -87,6 +128,7 @@ public class ScreenController {
 		if (dir.getAxis() == Direction.Axis.Y) height++;
 		else width++;
 		tryExpand(dir);
+		hasChanged = true;
 	}
 	
 	public void setLevel(Level level, @Nullable Runnable scheduleUpdate) {
@@ -133,6 +175,7 @@ public class ScreenController {
 	
 	public CompoundTag save() {
 		CompoundTag tag = new CompoundTag();
+		tag.putByteArray("data", data);
 		tag.putInt("width", width);
 		tag.putInt("height", height);
 		tag.putBoolean("removed", removed);
@@ -140,9 +183,11 @@ public class ScreenController {
 	}
 	
 	public void load(CompoundTag tag) {
+		data = new ByteArrayList(tag.getByteArray("data"));
 		width = tag.getInt("width");
 		height = tag.getInt("height");
 		removed = tag.getBoolean("removed");
+		hasChanged = false;
 		if (level == null) {
 			shouldUpdate = true;
 		} else {
@@ -160,6 +205,27 @@ public class ScreenController {
 					throw new IllegalStateException("Block must have a ScreenEntity!");
 				}
 			}
+		}
+	}
+	
+	public CompoundTag getUpdatePacketTag() {
+		if (hasChanged) {
+			hasChanged = false;
+			return save();
+		}
+		CompoundTag tag = new CompoundTag();
+		tag.putByteArray("changed", lastChanged);
+		lastChanged.clear();
+		return tag;
+	}
+	
+	public void onDataPacketTag(CompoundTag tag) {
+		if (tag.contains("changed")) {
+			for (byte b : tag.getByteArray("changed")) {
+				addByte(b);
+			}
+		} else {
+			load(tag);
 		}
 	}
 }

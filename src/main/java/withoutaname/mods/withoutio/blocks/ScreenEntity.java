@@ -3,13 +3,18 @@ package withoutaname.mods.withoutio.blocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.Connection;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import withoutaname.mods.withoutio.setup.Registration;
 import withoutaname.mods.withoutio.tools.ScreenController;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public class ScreenEntity extends BlockEntity {
 	
@@ -49,11 +54,27 @@ public class ScreenEntity extends BlockEntity {
 		if ((level == null || !level.isClientSide) && this.controller != controller) {
 			this.controller = controller;
 			updateFrame();
+			setChanged();
 		}
 	}
 	
 	public ScreenController getController() {
 		return controller;
+	}
+	
+	@Override
+	public AABB getRenderBoundingBox() {
+		if (getBlockState().getValue(ScreenBlock.FRAME_LEFT) && getBlockState().getValue(ScreenBlock.FRAME_TOP)) {
+			BlockPos topLeft = controller.getTopLeftCorner().above();
+			if (controller.facing.getAxisDirection() == Direction.AxisDirection.POSITIVE) {
+				topLeft = topLeft.relative(controller.facing);
+			}
+			if (controller.left.getAxisDirection() == Direction.AxisDirection.POSITIVE) {
+				topLeft = topLeft.relative(controller.left);
+			}
+			return new AABB(topLeft, topLeft.below(controller.getHeight()).relative(controller.right, controller.getWidth()));
+		}
+		return AABB.ofSize(Vec3.atCenterOf(worldPosition), 0, 0, 0);
 	}
 	
 	private void updateFrame() {
@@ -85,6 +106,35 @@ public class ScreenEntity extends BlockEntity {
 				Direction.DOWN,
 				getBlockState().getValue(ScreenBlock.FACING).getClockWise()
 		};
+	}
+	
+	@Nullable
+	@Override
+	public ClientboundBlockEntityDataPacket getUpdatePacket() {
+		return controller.getTopLeftCorner().equals(worldPosition) ? new ClientboundBlockEntityDataPacket(worldPosition, 0, controller.getUpdatePacketTag()) : null;
+	}
+	
+	@Override
+	public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt) {
+		controller.onDataPacketTag(pkt.getTag());
+	}
+	
+	
+	@Override
+	public CompoundTag getUpdateTag() {
+		CompoundTag tag = super.getUpdateTag();
+		if (controller.getTopLeftCorner().equals(worldPosition)) {
+			tag.put("controller", controller.save());
+		}
+		return tag;
+	}
+	
+	@Override
+	public void handleUpdateTag(CompoundTag tag) {
+		super.handleUpdateTag(tag);
+		if (tag.contains("controller")) {
+			controller.load(tag.getCompound("controller"));
+		}
 	}
 	
 	@Override
